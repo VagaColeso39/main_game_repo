@@ -27,13 +27,13 @@ holding = 0
 while running:
     clock.tick(FPS)
     for event in pg.event.get():
-        if event.type == pg.MOUSEBUTTONDOWN:
+        if event.type == pg.MOUSEBUTTONDOWN and event.button == 1:
             for i, card in enumerate(player.cards):
                 if card.rect.collidepoint(event.pos):
                     card.isClicked = True
                     holding = i
                     break
-        elif event.type == pg.MOUSEBUTTONUP:
+        elif event.type == pg.MOUSEBUTTONUP and event.button == 1:
             happen = False
             try:
                 if player.cards[holding].isClicked:
@@ -60,7 +60,11 @@ while running:
             holding = 0
             collision_list.clear()
             player.update()
-
+        elif event.type == pg.MOUSEBUTTONDOWN and event.button == 3:
+            for i, card in enumerate(player.cards):
+                if card.rect.collidepoint(event.pos):
+                    card.flip()
+                    break
         if event.type == pg.QUIT:
             running = False
 

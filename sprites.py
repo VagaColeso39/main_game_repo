@@ -22,7 +22,7 @@ class AnswerError(Exception):
 
 
 class Card(pg.sprite.Sprite):
-    def __init__(self, x, y, isplaced):
+    def __init__(self, x, y, isplaced, sides):
         pg.sprite.Sprite.__init__(self)
         # self.image = pg.Surface((CARD_SIZE, CARD_SIZE))
         # self.image.fill(GREEN)
@@ -31,10 +31,18 @@ class Card(pg.sprite.Sprite):
         self.rect = self.image.get_rect()
         self.rect.center = (x, HEIGHT - y)
         self.isplaced = isplaced
+        self.sides = sides
 
     def update(self):
         if self.isClicked:
             self.rect.center = pg.mouse.get_pos()
+
+    def flip(self):
+        print("faff")
+        self.image = pg.transform.rotate(self.image, -90)
+        self.sides['LEFT'], self.sides['UP'], self.sides['RIGHT'], self.sides['DOWN'], =\
+            self.sides['UP'], self.sides['RIGHT'], self.sides['DOWN'], self.sides['LEFT'],
+        print(self.sides)
 
 
 class Player(pg.sprite.Sprite):
@@ -44,7 +52,8 @@ class Player(pg.sprite.Sprite):
         self.cardsLeft = 10
         self.cards = []
         for i in range(1, 11):
-            self.cards.append(Card((CARD_SIZE + 10) * i, CARD_SIZE // 2 + 50, False))
+            self.cards.append(
+                Card((CARD_SIZE + 10) * i, CARD_SIZE // 2 + 50, False, {'LEFT': 1, 'UP': 2, 'RIGHT': 3, "DOWN": 4}))
 
     def placeCard(self, holding, collision, card):
         self.cards[holding].isClicked = False
@@ -111,4 +120,4 @@ class Desk(pg.sprite.Sprite):
     def __init__(self):
         pg.sprite.Sprite.__init__(self)
         self.cardsLeft = 1
-        self.cards = [Card(WIDTH // 2, HEIGHT // 2, True)]
+        self.cards = [Card(WIDTH // 2, HEIGHT // 2, True, {'LEFT': 1, 'UP': 2, 'RIGHT': 3, "DOWN": 4})]
