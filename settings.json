@@ -1,5 +1,6 @@
 {
-  "HEIGHT": 700,
-  "WIDTH": 1200,
-  "CARDSIZE": 100
+  "HEIGHT": 750,
+  "WIDTH": 1500,
+  "CARDSIZE": 100,
+  "takeCard": "takeCard.png"
 }

@@ -1,6 +1,7 @@
 import pygame as pg
 import json
 import os.path
+import random
 
 with open('settings.json') as data:
     settings = json.load(data)
@@ -9,8 +10,14 @@ CARD_SIZE = settings['CARDSIZE']
 WIDTH = settings['WIDTH']
 HEIGHT = settings['HEIGHT']
 GREEN = (0, 255, 0)
+curCard = 10
 screen = pg.display.set_mode((WIDTH, HEIGHT), pg.RESIZABLE)
-IMAGE = pg.image.load(os.path.join('img', 'img1.png'))
+layers = pg.sprite.LayeredUpdates()
+with open('cards.json') as data:
+    cards = json.load(data)
+
+cards_keys = [str(i) for i in range(1, 49)]
+random.shuffle(cards_keys)
 
 
 class CollideError(Exception):
@@ -22,27 +29,25 @@ class AnswerError(Exception):
 
 
 class Card(pg.sprite.Sprite):
-    def __init__(self, x, y, isplaced, sides):
+    def __init__(self, x, y, isplaced, number, layer=1):
         pg.sprite.Sprite.__init__(self)
-        # self.image = pg.Surface((CARD_SIZE, CARD_SIZE))
-        # self.image.fill(GREEN)
+        card = cards[number]
+        IMAGE = pg.image.load(os.path.join('img', card[0]))
+        self._layer = layer
         self.image = IMAGE
         self.isClicked = False
         self.rect = self.image.get_rect()
         self.rect.center = (x, HEIGHT - y)
         self.isplaced = isplaced
-        self.sides = sides
+        self.sides = card[1:5]
 
     def update(self):
         if self.isClicked:
             self.rect.center = pg.mouse.get_pos()
 
     def flip(self):
-        print("faff")
         self.image = pg.transform.rotate(self.image, -90)
-        self.sides['LEFT'], self.sides['UP'], self.sides['RIGHT'], self.sides['DOWN'], =\
-            self.sides['UP'], self.sides['RIGHT'], self.sides['DOWN'], self.sides['LEFT'],
-        print(self.sides)
+        self.sides[0], self.sides[1], self.sides[2], self.sides[3] = self.sides[3], self.sides[0], self.sides[1], self.sides[2]
 
 
 class Player(pg.sprite.Sprite):
@@ -52,15 +57,19 @@ class Player(pg.sprite.Sprite):
         self.cardsLeft = 10
         self.cards = []
         for i in range(1, 11):
-            self.cards.append(
-                Card((CARD_SIZE + 10) * i, CARD_SIZE // 2 + 50, False, {'LEFT': 1, 'UP': 2, 'RIGHT': 3, "DOWN": 4}))
+            temp = Card((CARD_SIZE + 5) * i, CARD_SIZE // 2 + 50, False, cards_keys[i-1])
+            self.cards.append(temp)
+            layers.add(self.cards[-1])
 
     def placeCard(self, holding, collision, card):
         self.cards[holding].isClicked = False
         x, y = self.cards[holding].rect.center
-        print(collision, card)
-
-        if True:  # check for right asnwer
+        card2 = self.cards[holding]
+        first = collision[0] == "LEFT" and card.sides[0] == card2.sides[2]
+        second = collision[0] == "RIGHT" and card.sides[2] == card2.sides[0]
+        third = collision[1] == "UP" and card.sides[1] == card2.sides[3]
+        forth = collision[1] == "DOWN" and card.sides[3] == card2.sides[1]
+        if first or second or third or forth:  # check for right answer
             if collision[0] == "LEFT":
                 x = card.rect.center[0] - CARD_SIZE
             elif collision[0] == "RIGHT":
@@ -76,7 +85,6 @@ class Player(pg.sprite.Sprite):
                 y = card.rect.center[1]
 
             self.cards[holding].rect.center = (x, y)
-            self.score += 100
         else:
             raise AnswerError
 
@@ -113,6 +121,10 @@ class Player(pg.sprite.Sprite):
                 x = "EQUAL"
             else:
                 return False, ()
+
+        if CARD_SIZE * 2 - CARD_SIZE // 2 < abs(a[0] - b[0]) + abs(a[1] - b[1]):
+            return False, ()
+
         return True, (x, y)
 
 
@@ -120,4 +132,17 @@ class Desk(pg.sprite.Sprite):
     def __init__(self):
         pg.sprite.Sprite.__init__(self)
         self.cardsLeft = 1
-        self.cards = [Card(WIDTH // 2, HEIGHT // 2, True, {'LEFT': 1, 'UP': 2, 'RIGHT': 3, "DOWN": 4})]
+        self.cards = [Card(WIDTH // 2, HEIGHT // 2, True, cards_keys[-1], layer=0)]
+        layers.add(self.cards[-1])
+
+
+class TakeButton(pg.sprite.Sprite):
+    def __init__(self, path):
+        pg.sprite.Sprite.__init__(self)
+        IMAGE = pg.image.load(os.path.join('img', path))
+        self.image = IMAGE
+        self._layer = 0
+        self.rect = self.image.get_rect()
+        self.rect.center = (100, 100)
+        layers.add(self)
+
