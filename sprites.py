@@ -1,7 +1,8 @@
-import pygame as pg
 import json
 import os.path
 import random
+
+import pygame as pg
 
 with open('settings.json') as data:
     settings = json.load(data)
@@ -31,23 +32,41 @@ class AnswerError(Exception):
 class Card(pg.sprite.Sprite):
     def __init__(self, x, y, isplaced, number, layer=1):
         pg.sprite.Sprite.__init__(self)
-        card = cards[number]
-        IMAGE = pg.image.load(os.path.join('img', card[0]))
+        self.card = cards[number]
+        self.source = pg.image.load(os.path.join('img', self.card[0]))
+        self.inspect = pg.image.load(os.path.join('img', 'card' + self.card[0][3:]))
         self._layer = layer
-        self.image = IMAGE
+        self.image = self.source
         self.isClicked = False
+        self.isInspect = False
+        self.angle = 0
         self.rect = self.image.get_rect()
         self.rect.center = (x, HEIGHT - y)
         self.isplaced = isplaced
-        self.sides = card[1:5]
+        self.sides = self.card[1:5]
+        self.saved_centre = (0, 0)
 
     def update(self):
+        if self.isInspect:
+            self.image = self.inspect
+            self.rect = self.image.get_rect()
+            if self.rect.x + 250 <= WIDTH:
+                self.rect.x += 250
+            else:
+                self.rect.x -= 250
+
+            if self.rect.y + 250 <= HEIGHT:
+                self.rect.y += 250
+            else:
+                self.rect.y -= 250
         if self.isClicked:
             self.rect.center = pg.mouse.get_pos()
 
     def flip(self):
+        self.angle = (self.angle - 90) % 360
         self.image = pg.transform.rotate(self.image, -90)
-        self.sides[0], self.sides[1], self.sides[2], self.sides[3] = self.sides[3], self.sides[0], self.sides[1], self.sides[2]
+        self.sides[0], self.sides[1], self.sides[2], self.sides[3] =\
+            self.sides[3], self.sides[0], self.sides[1], self.sides[2]
 
 
 class Player(pg.sprite.Sprite):
@@ -57,7 +76,7 @@ class Player(pg.sprite.Sprite):
         self.cardsLeft = 10
         self.cards = []
         for i in range(1, 11):
-            temp = Card((CARD_SIZE + 5) * i, CARD_SIZE // 2 + 50, False, cards_keys[i-1])
+            temp = Card((CARD_SIZE + 5) * i, CARD_SIZE // 2 + 50, False, cards_keys[i - 1])
             self.cards.append(temp)
             layers.add(self.cards[-1])
 
@@ -145,4 +164,3 @@ class TakeButton(pg.sprite.Sprite):
         self.rect = self.image.get_rect()
         self.rect.center = (100, 100)
         layers.add(self)
-
