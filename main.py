@@ -76,7 +76,6 @@ while running:
                 player.cards[holding].rect.center = (CARD_SIZE + 5, HEIGHT - (CARD_SIZE // 2 + 160))
             else:
                 player.cards[holding].isClicked = False
-            print(player.score)
             holding = 0
             collision_list.clear()
             player.update()
@@ -123,7 +122,7 @@ while running:
             for card in desk.cards:
                 card.rect.y += 100
         elif event.type == pg.KEYDOWN and event.key == pg.K_SPACE:
-            print('faf')
+
             for i, card in enumerate(player.cards):
                 if card.rect.collidepoint(pg.mouse.get_pos()):
                     save = card.rect.center
