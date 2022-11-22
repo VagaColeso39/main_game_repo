@@ -151,11 +151,11 @@ class Desk(pg.sprite.Sprite):
     def __init__(self):
         pg.sprite.Sprite.__init__(self)
         self.cardsLeft = 1
-        self.cards = [Card(WIDTH // 2, HEIGHT // 2, True, cards_keys[-1], layer=0)]
+        self.cards = [Card(650, 350, True, cards_keys[-1], layer=0)]
         layers.add(self.cards[-1])
 
 
-class TakeButton(pg.sprite.Sprite):
+class Button(pg.sprite.Sprite):
     def __init__(self, path):
         pg.sprite.Sprite.__init__(self)
         IMAGE = pg.image.load(os.path.join('img', path))
