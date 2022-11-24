@@ -70,13 +70,13 @@ class Card(pg.sprite.Sprite):
 
 
 class Player(pg.sprite.Sprite):
-    def __init__(self):
+    def __init__(self, cards):
         pg.sprite.Sprite.__init__(self)
         self.score = 0
-        self.cardsLeft = 10
+        self.cardsLeft = 8
         self.cards = []
-        for i in range(1, 11):
-            temp = Card((CARD_SIZE + 5) * i, CARD_SIZE // 2 + 50, False, cards_keys[i - 1])
+        for i in range(1, 9):
+            temp = Card((CARD_SIZE + 5) * i, CARD_SIZE // 2 + 50, False, cards[i-1])
             self.cards.append(temp)
             layers.add(self.cards[-1])
 

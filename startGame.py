@@ -1,12 +1,14 @@
+import sys
+import uuid
+from multiprocessing import Process
+from time import sleep
+
 import pygame as pg
 import requests
-import uuid
-import os
-import subprocess
-import sys
-from PyQt5.QtWidgets import QWidget, QApplication
 from PyQt5 import uic
-from sprites import settings
+from PyQt5.QtWidgets import QWidget, QApplication
+
+from game import Game
 
 layers = pg.sprite.LayeredUpdates()
 user_id = str(uuid.UUID(int=uuid.getnode()))
@@ -14,7 +16,7 @@ carryOn = True
 size = (1200, 700)
 screen = pg.display.set_mode(size, pg.RESIZABLE)
 screen.fill((102, 102, 153))
-pg.display.set_caption("My First Game")
+pg.display.set_caption("choose game")
 clock = pg.time.Clock()
 url = 'https://vagacoleso.pythonanywhere.com'
 url = "http://127.0.0.1:5000"
@@ -52,7 +54,7 @@ class JoinGame(QWidget):
         self.close()
 
 
-class Game(pg.sprite.Sprite):
+class GameShow(pg.sprite.Sprite):
     def __init__(self, name, players, max_players, number):
         pg.sprite.Sprite.__init__(self)
         self.surf = pg.Surface((size[0], 30))
@@ -138,7 +140,7 @@ def get_games():
         all_sprites.empty()
         x = x.json()
         for i, key in enumerate(x.keys()):
-            games_list.append(Game(key, x[key][0], x[key][1], i))
+            games_list.append(GameShow(key, x[key][0], x[key][1], i))
             all_sprites.add(games_list[-1])
         games_list.append(NewGame(len(x.keys())))
         all_sprites.add(games_list[-1])
@@ -150,7 +152,7 @@ def get_games():
         all_sprites.add(games_list[-1])
         temp = pg.Surface((size[0], 30))  # топ костыль, ничего не скажешь
         temp.fill((102, 102, 153))
-        screen.blit(temp, (0,  (len(x.keys()) + 4) * 35))
+        screen.blit(temp, (0, (len(x.keys()) + 4) * 35))
 
 
 def create_game(name, password, players_max):
@@ -184,45 +186,55 @@ def start_game():
 
 def check_game():
     data = {"user_id": user_id}
-    req = requests.post(url + "/check", json=data)
-    if req and req.text != "Not active":
-        print("faffff")
-        cards = " ".join(req.json()[user_id])
-        subprocess.Popen(['python3', 'main.py', cards])
+    while True:
+        req = requests.post(url + "/check", json=data)
+        if req and req.text != "Not active":
+            print(req.json())
+            print(user_id)
+            print(req.json()[user_id])
+            cards = req.json()[user_id]
+            name = req.json()["name"]
+            game = Game(cards, name)  # вылет игры при выходе через крестик. try except pygame.error: display Surface quit ?
+            # Error Process Process-1:
+            game.run()
+        sleep(1)
 
 
-get_games()
-while carryOn:
-    for event in pg.event.get():
-        if event.type == pg.QUIT:
-            carryOn = False
-        elif event.type == pg.KEYDOWN:
-            if event.key == pg.K_r:
-                get_games()
+if __name__ == "__main__":
+    checking_process = Process(target=check_game)
+    checking_process.start()
 
-        elif event.type == pg.MOUSEBUTTONDOWN and event.button == 1:
-            if games_list:
-                if games_list[-4].rect.collidepoint(event.pos):
-                    ex = CreateGame()
-                    ex.show()
-                    app.exec_()
-                elif games_list[-3].rect.collidepoint(event.pos):
-                    leave_game()
-                elif games_list[-2].rect.collidepoint(event.pos):
+    get_games()
+    while carryOn:
+        for event in pg.event.get():
+            if event.type == pg.QUIT:
+                carryOn = False
+            elif event.type == pg.KEYDOWN:
+                if event.key == pg.K_r:
                     get_games()
-                elif games_list[-1].rect.collidepoint(event.pos):
-                    start_game()
-                else:
-                    for game in games_list:
-                        if game.rect.collidepoint(event.pos):
-                            ex = JoinGame(game.name)
-                            ex.show()
-                            app.exec_()
-                            break
 
-    check_game()
-    all_sprites.update()
-    pg.display.flip()
-    clock.tick(60)
+            elif event.type == pg.MOUSEBUTTONDOWN and event.button == 1:
+                if games_list:
+                    if games_list[-4].rect.collidepoint(event.pos):
+                        ex = CreateGame()
+                        ex.show()
+                        app.exec_()
+                    elif games_list[-3].rect.collidepoint(event.pos):
+                        leave_game()
+                    elif games_list[-2].rect.collidepoint(event.pos):
+                        get_games()
+                    elif games_list[-1].rect.collidepoint(event.pos):
+                        start_game()
+                    else:
+                        for game in games_list:
+                            if game.rect.collidepoint(event.pos):
+                                ex = JoinGame(game.name)
+                                ex.show()
+                                app.exec_()
+                                break
 
-pg.quit()
+        all_sprites.update()
+        pg.display.flip()
+        clock.tick(60)
+
+    pg.quit()
