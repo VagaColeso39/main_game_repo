@@ -19,7 +19,6 @@ screen.fill((102, 102, 153))
 pg.display.set_caption("choose game")
 clock = pg.time.Clock()
 url = 'https://vagacoleso.pythonanywhere.com'
-url = "http://127.0.0.1:5000"
 games_list = []
 pg.font.init()
 f1 = pg.font.Font(None, 40)

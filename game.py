@@ -1,6 +1,7 @@
 import uuid
 from multiprocessing import Process
 import requests
+import threading
 from time import sleep
 
 from sprites import *
@@ -40,32 +41,35 @@ class Game:
         self.hintButton = Button(settings["helpCard"])
         self.hintButton.rect.center = (100, 250)
         self.all_sprites.add(self.hintButton)
-
+        self.url = 'https://vagacoleso.pythonanywhere.com'
+        self.user_id = str(uuid.UUID(int=uuid.getnode()))
         self.holding = 0
+
+    def check_desk(self):
+        print("faf")
+        data = {"user_id": self.user_id, "command": "get_desk", "name": self.name}
+        global cur_turn
+        req = requests.post(self.url + "/game", json=data)
+        if req:
+            cur_turn = req.json()['turn']
+            cards_on_desk = [req.json()['cards'][key] for key in req.json()['cards'].keys()]
+            for i, temp in enumerate(cards_on_desk):
+                cards_on_desk[i] = Card(temp[0][0], temp[0][1], isplaced=True, number=str(temp[1]), layer=0)
+            temp = set(cards_on_desk) | set(self.desk.cards)
+            print(temp)
+            print(set(cards_on_desk), set(self.desk.cards))
+            for card in temp:  # сделать нормально, карты в класс карт добавить, починить сравнение и добавление карт
+                self.desk.cards.append(card)
+                self.all_sprites.add(card)
+        desk_check = threading.Timer(1, self.check_desk)
+        desk_check.start()
 
     def run(self):
         global curCard
         user_id = str(uuid.UUID(int=uuid.getnode()))
         url = 'https://vagacoleso.pythonanywhere.com'
-        url = "http://127.0.0.1:5000"
-
-        def check_desk():
-            data = {"user_id": user_id, "command": "get_desk", "name": self.name}
-            req = requests.post(url + "/game", json=data)
-            if req:
-                global cur_turn
-                cur_turn = req.json()['turn']
-                cards_on_desk = [req.json()['cards'][key] for key in req.json()['cards'].keys()]
-                for i, temp in enumerate(cards_on_desk):
-                    cards_on_desk[i] = Card(temp[0][0], temp[0][1], isplaced=True, number=temp[1], layer=0)
-                temp = set(cards_on_desk) | set(self.desk.cards)
-                for card in temp:  # сделать нормально, карты в класс карт добавить, починить сравнение и добавление карт
-                    self.desk.cards.append(card)
-                    self.all_sprites.add(card)
-            sleep(0.5)
-
-        checking_process = Process(target=check_desk())
-        checking_process.start()
+        desk_check = threading.Timer(1, self.check_desk)
+        desk_check.start()
 
         while self.running:
             self.clock.tick(self.FPS)
@@ -127,7 +131,7 @@ class Game:
                         if check:
                             if check.text == "YES":
                                 data["command"] = "put_card"
-                                data['card_id'] = int(self.player.cards[self.holding].card[0][3:5])
+                                data['card_id'] = int(self.player.cards[self.holding].card[0][3:5].replace(',', ''))
                                 data['angle'] = self.player.cards[self.holding].angle
                                 data['rect'] = (self.player.cards[self.holding].rect.x + self.x_move,
                                                 self.player.cards[self.holding].rect.y + self.y_move)
