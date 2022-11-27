@@ -11,7 +11,7 @@ collision_list = []
 
 all_sprites = pg.sprite.Group()
 
-player = Player()
+player = Player(cards_keys[0:8])
 
 for card in player.cards:
     all_sprites.add(card)
@@ -150,8 +150,6 @@ while running:
                         card.rect.y = temp
                     flagx = True
                     flagy = True
-                    print(card.rect.center)
-                    print(desk.cards[0].rect.center)
                     for board_card in desk.cards:
                         if board_card.rect.x == card.rect.x or board_card.rect.x == card.rect.x - 100 or \
                                 board_card.rect.x == card.rect.x + 100:
