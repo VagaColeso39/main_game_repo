@@ -1,15 +1,15 @@
-import uuid
-from multiprocessing import Process
-import requests
 import threading
-from time import sleep
+import uuid
+
+import requests
 
 from sprites import *
 
 cur_turn = 0
 
+
 class Game:
-    def __init__(self, cards, name):
+    def __init__(self, cards, name, start_card):
         self.FPS = 60
         self.running = True
         self.name = name
@@ -24,6 +24,7 @@ class Game:
         self.collision_list = []
 
         self.all_sprites = pg.sprite.Group()
+        self.card_sprites = pg.sprite.Group()
 
         self.player = Player(cards)
 
@@ -33,7 +34,7 @@ class Game:
         self.f1 = pg.font.Font(None, 40)
         self.f2 = pg.font.Font(None, 20)
 
-        self.desk = Desk()
+        self.desk = Desk(start_card)
         self.all_sprites.add(self.desk.cards[0])
 
         self.takeButton = Button(settings["takeCard"])
@@ -42,32 +43,38 @@ class Game:
         self.hintButton.rect.center = (100, 250)
         self.all_sprites.add(self.hintButton)
         self.url = 'https://vagacoleso.pythonanywhere.com'
+        self.url = 'http://127.0.0.1:5000'
         self.user_id = str(uuid.UUID(int=uuid.getnode()))
         self.holding = 0
 
     def check_desk(self):
-        print("faf")
         data = {"user_id": self.user_id, "command": "get_desk", "name": self.name}
         global cur_turn
         req = requests.post(self.url + "/game", json=data)
         if req:
             cur_turn = req.json()['turn']
             cards_on_desk = [req.json()['cards'][key] for key in req.json()['cards'].keys()]
-            for i, temp in enumerate(cards_on_desk):
-                cards_on_desk[i] = Card(temp[0][0], temp[0][1], isplaced=True, number=str(temp[1]), layer=0)
-            temp = set(cards_on_desk) | set(self.desk.cards)
-            print(temp)
-            print(set(cards_on_desk), set(self.desk.cards))
-            for card in temp:  # сделать нормально, карты в класс карт добавить, починить сравнение и добавление карт
-                self.desk.cards.append(card)
-                self.all_sprites.add(card)
+            for i, temp in enumerate(
+                    cards_on_desk):
+                cards_on_desk[i] = Card(temp[0][0] + self.x_move, temp[0][1] + self.y_move, isplaced=True, number=str(temp[1]),
+                                        layer=0)
+                self.desk.cards = cards_on_desk
+            self.card_sprites.empty()
+            for card in cards_on_desk:
+                self.card_sprites.add(card)
+                if not layers.has(card):
+                    layers.add(card)
+            print(cards_on_desk)
+            print(self.all_sprites)
         desk_check = threading.Timer(1, self.check_desk)
         desk_check.start()
+
 
     def run(self):
         global curCard
         user_id = str(uuid.UUID(int=uuid.getnode()))
         url = 'https://vagacoleso.pythonanywhere.com'
+        url = 'http://127.0.0.1:5000'
         desk_check = threading.Timer(1, self.check_desk)
         desk_check.start()
 
@@ -107,6 +114,7 @@ class Game:
                     answer = True
                     try:
                         if self.player.cards[self.holding].isClicked:
+                            print(self.desk.cards, "Trying to put the card")
                             for card in self.desk.cards:
                                 flag, collision = self.player.isCollide(card,
                                                                         self.player.cards[self.holding])  # if no cards
@@ -125,7 +133,7 @@ class Game:
                     except CollideError:
                         happen = False
 
-                    if happen and answer:  # я ТУТ, Прописать метод для запроса поля раз в секунду если не мой ход + переписать остаток методов
+                    if happen and answer:
                         data = {"user_id": user_id, "command": "is_my_turn", "name": self.name}
                         check = requests.post(url + "/game", json=data)
                         if check:
@@ -133,8 +141,8 @@ class Game:
                                 data["command"] = "put_card"
                                 data['card_id'] = int(self.player.cards[self.holding].card[0][3:5].replace(',', ''))
                                 data['angle'] = self.player.cards[self.holding].angle
-                                data['rect'] = (self.player.cards[self.holding].rect.x + self.x_move,
-                                                self.player.cards[self.holding].rect.y + self.y_move)
+                                data['rect'] = (self.player.cards[self.holding].rect.x - self.x_move + 50,
+                                                self.player.cards[self.holding].rect.y - self.y_move + 50)
                                 self.desk.cards.append(self.player.cards[self.holding])
                                 pg.sprite.LayeredUpdates.change_layer(layers, self.desk.cards[-1], 0)
                                 self.player.cards.pop(self.holding)
@@ -244,14 +252,20 @@ class Game:
                                 if check:
                                     if check.text == "YES":
                                         data["command"] = "put_card"
-                                        data['card_id'] = int(self.player.cards[self.holding].card[0][3:5])
+                                        for i, card in enumerate(self.player.cards):
+                                            if card.rect.collidepoint(pg.mouse.get_pos()):
+                                                self.holding = i
+                                                break
+                                        data['card_id'] = int(
+                                            self.player.cards[self.holding].card[0][3:5].replace(".", ""))
                                         data['angle'] = self.player.cards[self.holding].angle
                                         data['rect'] = (self.player.cards[self.holding].rect.x + self.x_move,
                                                         self.player.cards[self.holding].rect.y + self.y_move)
                                         data['score'] = self.player.score
+                                        print(f'card number is {data["card_id"]}, rect is {data["rect"]}')
                                         requests.post(url + "/game", json=data)
                                         self.player.cards.pop(i)
-                                        self.desk.cards.append(card)
+                                        self.desk.cards.append(self.player.cards[self.holding])
                                         pg.sprite.LayeredUpdates.change_layer(layers, self.desk.cards[-1], 0)
                                         break
                             else:

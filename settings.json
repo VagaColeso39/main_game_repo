@@ -3,5 +3,8 @@
   "WIDTH": 1200,
   "CARDSIZE": 100,
   "takeCard": "takeCard.png",
-  "helpCard": "helpCard.png"
+  "helpCard": "helpCard.png",
+  "gameType": "stones",
+  "cardsAmount": 24,
+  "cardsType": "png"
 }

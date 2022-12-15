@@ -19,6 +19,7 @@ screen.fill((102, 102, 153))
 pg.display.set_caption("choose game")
 clock = pg.time.Clock()
 url = 'https://vagacoleso.pythonanywhere.com'
+url = 'http://127.0.0.1:5000'
 games_list = []
 pg.font.init()
 f1 = pg.font.Font(None, 40)
@@ -193,7 +194,7 @@ def check_game():
             print(req.json()[user_id])
             cards = req.json()[user_id]
             name = req.json()["name"]
-            game = Game(cards, name)  # вылет игры при выходе через крестик. try except pygame.error: display Surface quit ?
+            game = Game(cards, name, start_card=req.json()['start_card'])  # вылет игры при выходе через крестик. try except pygame.error: display Surface quit ?
             # Error Process Process-1:
             game.run()
         sleep(1)

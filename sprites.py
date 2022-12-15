@@ -14,10 +14,10 @@ GREEN = (0, 255, 0)
 curCard = 10
 screen = pg.display.set_mode((WIDTH, HEIGHT), pg.RESIZABLE)
 layers = pg.sprite.LayeredUpdates()
-with open('cards.json') as data:
+with open(f'{settings["gameType"]}.json') as data:
     cards = json.load(data)
 
-cards_keys = [str(i) for i in range(1, 49)]
+cards_keys = [str(i) for i in range(1, settings['cardsAmount'] + 1)]
 random.shuffle(cards_keys)
 
 
@@ -33,8 +33,8 @@ class Card(pg.sprite.Sprite):
     def __init__(self, x, y, isplaced, number, layer=1):
         pg.sprite.Sprite.__init__(self)
         self.card = cards[number]
-        self.source = pg.image.load(os.path.join('img', self.card[0]))
-        self.inspect = pg.image.load(os.path.join('img', 'card' + self.card[0][3:]))
+        self.source = pg.image.load(os.path.join(f'img/{settings["gameType"]}', self.card[0]))
+        self.inspect = pg.image.load(os.path.join(f'img/{settings["gameType"]}', 'card' + self.card[0][3:]))
         self._layer = layer
         self.image = self.source
         self.isClicked = False
@@ -148,17 +148,17 @@ class Player(pg.sprite.Sprite):
 
 
 class Desk(pg.sprite.Sprite):
-    def __init__(self):
+    def __init__(self, start_card):
         pg.sprite.Sprite.__init__(self)
         self.cardsLeft = 1
-        self.cards = [Card(650, 350, True, cards_keys[-1], layer=0)]
+        self.cards = [Card(650, 350, True, start_card, layer=0)]
         layers.add(self.cards[-1])
 
 
 class Button(pg.sprite.Sprite):
     def __init__(self, path):
         pg.sprite.Sprite.__init__(self)
-        IMAGE = pg.image.load(os.path.join('img', path))
+        IMAGE = pg.image.load(os.path.join('img/buttons', path))
         self.image = IMAGE
         self._layer = 0
         self.rect = self.image.get_rect()

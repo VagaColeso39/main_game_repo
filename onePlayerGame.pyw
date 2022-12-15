@@ -19,7 +19,7 @@ for card in player.cards:
 f1 = pg.font.Font(None, 40)
 f2 = pg.font.Font(None, 20)
 
-desk = Desk()
+desk = Desk(cards_keys[-1])
 all_sprites.add(desk.cards[0])
 
 takeButton = Button(settings["takeCard"])
@@ -35,7 +35,7 @@ while running:
     for event in pg.event.get():
         if event.type == pg.MOUSEBUTTONDOWN and event.button == 1:
             if hintButton.rect.collidepoint(event.pos):
-                command = "img\helpTable.PNG"
+                command = "img/buttons/helpTable.PNG"
                 os.system(command)
             elif takeButton.rect.collidepoint(event.pos):
                 player.cards.append(Card((CARD_SIZE + 5) * 2, CARD_SIZE // 2 + 150, False, cards_keys[curCard]))
