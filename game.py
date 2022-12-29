@@ -8,8 +8,15 @@ from sprites import *
 cur_turn = 0
 
 
+class ExitError(Exception):
+    pass
+
+
 class Game:
     def __init__(self, cards, name, start_card):
+        global screen
+        screen = pg.display.set_mode((WIDTH, HEIGHT), pg.RESIZABLE)
+
         self.FPS = 60
         self.running = True
         self.name = name
@@ -51,24 +58,24 @@ class Game:
         data = {"user_id": self.user_id, "command": "get_desk", "name": self.name}
         global cur_turn
         req = requests.post(self.url + "/game", json=data)
-        if req:
+        data["command"] = "is_my_turn"
+        check = requests.post(self.url + "/game", json=data)
+        if req and not check:
             cur_turn = req.json()['turn']
+
             cards_on_desk = [req.json()['cards'][key] for key in req.json()['cards'].keys()]
             for i, temp in enumerate(
                     cards_on_desk):
-                cards_on_desk[i] = Card(temp[0][0] + self.x_move, temp[0][1] + self.y_move, isplaced=True, number=str(temp[1]),
-                                        layer=0)
+                cards_on_desk[i] = Card(temp[0][0] + self.x_move, HEIGHT - temp[0][1] - self.y_move, isplaced=True,
+                                        number=str(temp[1]), angle=temp[2], layer=0)
                 self.desk.cards = cards_on_desk
             self.card_sprites.empty()
             for card in cards_on_desk:
                 self.card_sprites.add(card)
                 if not layers.has(card):
                     layers.add(card)
-            print(cards_on_desk)
-            print(self.all_sprites)
         desk_check = threading.Timer(1, self.check_desk)
         desk_check.start()
-
 
     def run(self):
         global curCard
@@ -114,7 +121,6 @@ class Game:
                     answer = True
                     try:
                         if self.player.cards[self.holding].isClicked:
-                            print(self.desk.cards, "Trying to put the card")
                             for card in self.desk.cards:
                                 flag, collision = self.player.isCollide(card,
                                                                         self.player.cards[self.holding])  # if no cards
@@ -139,7 +145,7 @@ class Game:
                         if check:
                             if check.text == "YES":
                                 data["command"] = "put_card"
-                                data['card_id'] = int(self.player.cards[self.holding].card[0][3:5].replace(',', ''))
+                                data['card_id'] = int(self.player.cards[self.holding].card[0][3:5].replace('.', ''))
                                 data['angle'] = self.player.cards[self.holding].angle
                                 data['rect'] = (self.player.cards[self.holding].rect.x - self.x_move + 50,
                                                 self.player.cards[self.holding].rect.y - self.y_move + 50)
@@ -170,7 +176,6 @@ class Game:
                 elif event.type == pg.MOUSEBUTTONDOWN and event.button == 3:
                     for i, card in enumerate(self.player.cards):
                         if card.rect.collidepoint(event.pos):
-                            card.angle = (card.angle + 90) % 360
                             card.flip()
                             break
                 elif (event.type == pg.MOUSEBUTTONDOWN and event.button == 2) or \
@@ -237,7 +242,10 @@ class Game:
                                 card.rect.y = temp
                             flagx = True
                             flagy = True
+
                             for board_card in self.desk.cards:
+                                if type(board_card) == list:
+                                    board_card = Card(board_card[0][0], board_card[0][1], True, str(board_card[1]), 0, board_card[2])
                                 if board_card.rect.x == card.rect.x or board_card.rect.x == card.rect.x - 100 or \
                                         board_card.rect.x == card.rect.x + 100:
                                     flagx = False
@@ -259,34 +267,35 @@ class Game:
                                         data['card_id'] = int(
                                             self.player.cards[self.holding].card[0][3:5].replace(".", ""))
                                         data['angle'] = self.player.cards[self.holding].angle
-                                        data['rect'] = (self.player.cards[self.holding].rect.x + self.x_move,
-                                                        self.player.cards[self.holding].rect.y + self.y_move)
+                                        data['rect'] = (self.player.cards[self.holding].rect.x + self.x_move + 50,
+                                                        self.player.cards[self.holding].rect.y + self.y_move + 50)
                                         data['score'] = self.player.score
-                                        print(f'card number is {data["card_id"]}, rect is {data["rect"]}')
                                         requests.post(url + "/game", json=data)
-                                        self.player.cards.pop(i)
                                         self.desk.cards.append(self.player.cards[self.holding])
+                                        self.player.cards.pop(self.holding)
                                         pg.sprite.LayeredUpdates.change_layer(layers, self.desk.cards[-1], 0)
                                         break
                             else:
                                 card.rect.center = save
                                 break
                 elif event.type == pg.QUIT:
-                    self.running = False
+                    raise ExitError
 
             self.all_sprites.update()
-            screen.fill((0, 0, 0))
-            layers.draw(screen)
+
             text = self.f1.render(f"Счет: {self.player.score}", True, (255, 153, 51))
-            screen.blit(text, (WIDTH - 150, 20))
 
-            text = ["ЛКМ - установка карточек игрока", "ПКМ - поворот карточки",
-                    "Стрелочки - передвинуть карточки на поле",
-                    "Кнопка Е - увеличить карточку", "Пробел - начать новую линию карточек"]
-            for i, text in enumerate(text):
-                rend = self.f2.render(text, True, (255, 255, 255))
-                screen.blit(rend, (WIDTH - 300, 80 + i * 20))
+            text2 = ["ЛКМ - установка карточек игрока", "ПКМ - поворот карточки",
+                     "Стрелочки - передвинуть карточки на поле",
+                     "Кнопка Е - увеличить карточку", "Пробел - начать новую линию карточек"]
 
+            if screen != None:
+                screen.fill((0, 0, 0))
+                layers.draw(screen)
+                screen.blit(text, (WIDTH - 150, 20))
+                for i, text in enumerate(text2):
+                    rend = self.f2.render(text, True, (255, 255, 255))
+                    screen.blit(rend, (WIDTH - 300, 80 + i * 20))
             pg.display.flip()
 
         pg.quit()

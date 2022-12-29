@@ -6,19 +6,18 @@ import pygame as pg
 
 with open('settings.json') as data:
     settings = json.load(data)
-
 CARD_SIZE = settings['CARDSIZE']
 WIDTH = settings['WIDTH']
 HEIGHT = settings['HEIGHT']
 GREEN = (0, 255, 0)
 curCard = 10
-screen = pg.display.set_mode((WIDTH, HEIGHT), pg.RESIZABLE)
 layers = pg.sprite.LayeredUpdates()
 with open(f'{settings["gameType"]}.json') as data:
     cards = json.load(data)
 
 cards_keys = [str(i) for i in range(1, settings['cardsAmount'] + 1)]
 random.shuffle(cards_keys)
+screen = None
 
 
 class CollideError(Exception):
@@ -30,7 +29,7 @@ class AnswerError(Exception):
 
 
 class Card(pg.sprite.Sprite):
-    def __init__(self, x, y, isplaced, number, layer=1):
+    def __init__(self, x, y, isplaced, number, layer=1, angle=0):
         pg.sprite.Sprite.__init__(self)
         self.card = cards[number]
         self.source = pg.image.load(os.path.join(f'img/{settings["gameType"]}', self.card[0]))
@@ -39,7 +38,7 @@ class Card(pg.sprite.Sprite):
         self.image = self.source
         self.isClicked = False
         self.isInspect = False
-        self.angle = 0
+        self.angle = angle
         self.rect = self.image.get_rect()
         self.rect.center = (x, HEIGHT - y)
         self.isplaced = isplaced
@@ -65,6 +64,7 @@ class Card(pg.sprite.Sprite):
     def flip(self):
         self.angle = (self.angle - 90) % 360
         self.image = pg.transform.rotate(self.image, -90)
+        print(self.sides)
         self.sides[0], self.sides[1], self.sides[2], self.sides[3] =\
             self.sides[3], self.sides[0], self.sides[1], self.sides[2]
 
@@ -108,6 +108,9 @@ class Player(pg.sprite.Sprite):
             raise AnswerError
 
     def isCollide(self, board_card, player_card):
+        if type(board_card) == list:
+            board_card = Card(board_card[0][0], board_card[0][1], True, str(board_card[1]), 0, board_card[2])
+
         a = board_card.rect.center
         b = player_card.rect.center
         x = ''

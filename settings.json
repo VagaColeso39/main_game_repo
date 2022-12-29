@@ -4,7 +4,8 @@
   "CARDSIZE": 100,
   "takeCard": "takeCard.png",
   "helpCard": "helpCard.png",
-  "gameType": "stones",
-  "cardsAmount": 24,
-  "cardsType": "png"
+  "gameType": "geographic",
+  "cardsAmount": 48,
+  "cardsType": "jpg",
+  "CardsPerPlayer": 10
 }

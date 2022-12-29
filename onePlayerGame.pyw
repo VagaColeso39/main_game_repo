@@ -1,4 +1,4 @@
-from sprites import *
+from spritesForChoose import *
 
 FPS = 60
 running = True
@@ -61,6 +61,8 @@ while running:
                             happen = True
                             collision_list.append((collision, card))
                 try:
+                    print(collision_list)
+                    print(collision_list[0][1].sides, player.cards[holding].sides)
                     for collision, card in collision_list:
                         player.placeCard(holding, collision, card)
                 except AnswerError:
